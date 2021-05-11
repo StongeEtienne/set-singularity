@@ -1,0 +1,215 @@
+Bootstrap: docker
+From: ubuntu:xenial
+
+%setup
+    rm -rf $SINGULARITY_ROOTFS/freesurfer
+    mkdir $SINGULARITY_ROOTFS/freesurfer
+    cp license.txt $SINGULARITY_ROOTFS/freesurfer/
+
+    export SCILPY=set_scilpy_cut.tar.bz2
+    export DIPY=set_dipy.tar.bz2
+    export CIVET2DKT=civet2_dkt.tar.bz2
+    export CIVET2AAL=civet2_aal.tar.bz2
+
+    mkdir $SINGULARITY_ROOTFS/scilpy
+    tar -jxf $SCILPY -C $SINGULARITY_ROOTFS/scilpy
+
+
+    mkdir $SINGULARITY_ROOTFS/dipy
+    tar -jxf $DIPY -C $SINGULARITY_ROOTFS/dipy
+
+    mkdir $SINGULARITY_ROOTFS/civet2_dkt
+    tar -jxf $CIVET2DKT -C $SINGULARITY_ROOTFS/civet2_dkt
+
+    mkdir $SINGULARITY_ROOTFS/civet2_aal
+    tar -jxf $CIVET2AAL -C $SINGULARITY_ROOTFS/civet2_aal
+
+    # DEBUG min tools TODO REMOVE
+    # cp minc-toolkit-1.9.16-20180117-Ubuntu_16.04-x86_64.deb beast-library-1.1.0-20121212.deb bic-mni-models-0.1.1-20120421.deb $SINGULARITY_ROOTFS/
+
+%environment
+    # Freesurfer Path (from "source")
+    export FREESURFER_HOME=/freesurfer/freesurfer/
+    export SUBJECTS_DIR=$FREESURFER_HOME/subjects
+    export FUNCTIONALS_DIR=$FREESURFER_HOME/sessions
+    export FSFAST_HOME=$FREESURFER_HOME/fsfast
+    export MNI_DIR=$FREESURFER_HOME/mni
+    export MINC_BIN_DIR=$FREESURFER_HOME/mni/bin
+    export MINC_LIB_DIR=$FREESURFER_HOME/mni/lib
+    export MNI_PERL5LIB=$FREESURFER_HOME/mni/share/perl5
+    export PERL5LIB=$MNI_PERL5LIB
+    export LOCAL_DIR=$FREESURFER_HOME/local
+
+    export PATH=$FREESURFER_HOME/bin:$FSFAST_HOME/bin:$PATH
+    export PATH=$MINC_BIN_DIR:$PATH
+
+    # Python
+    export PYTHONPATH=/scilpy
+
+    export PATH=/scilpy/scripts:$PATH
+    export PATH=/scilpy/surgery_scripts:$PATH
+    export PATH=/scilpy/dev_scripts:$PATH
+    export OPENBLAS_NUM_THREADS=1
+    export MATPLOTLIBRC="/usr/local/lib/python2.7/dist-packages/matplotlib/mpl-data/"
+    export LC_ALL=C
+
+    # ANTs
+    export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
+    export ANTSPATH=/ants_build/bin
+    export PATH=$PATH:$ANTSPATH
+
+    # MINC tools Path (from "source /opt/minc/1.9.16/minc-toolkit-config.sh")
+    # minc-toolkit configuration parameters for 1.9.16-20180117
+    export MINC_TOOLKIT=/opt/minc/1.9.16
+    export MINC_TOOLKIT_VERSION="1.9.16-20180117"
+    export PATH=${MINC_TOOLKIT}/bin:${MINC_TOOLKIT}/pipeline:${PATH}
+    export PERL5LIB=${MINC_TOOLKIT}/perl:${MINC_TOOLKIT}/pipeline:${PERL5LIB}
+    export LD_LIBRARY_PATH=${MINC_TOOLKIT}/lib:${MINC_TOOLKIT}/lib/InsightToolkit:${LD_LIBRARY_PATH}
+    export MNI_DATAPATH=${MINC_TOOLKIT}/../share
+    export MINC_FORCE_V2=1
+    export MINC_COMPRESS=4
+    export VOLUME_CACHE_THRESHOLD=-1
+    export MANPATH=${MINC_TOOLKIT}/man:${MANPATH}
+
+
+    # FSL
+    export PATH=/mrtrix3/bin:$PATH
+    FSLDIR=/usr/share/fsl/5.0
+    . ${FSLDIR}/etc/fslconf/fsl.sh
+    PATH=${FSLDIR}/bin:${PATH}
+    export FSLDIR PATH
+    export OPENBLAS_NUM_THREADS=1
+
+
+%post
+    sed -i 's/main/main restricted universe/g' /etc/apt/sources.list
+    apt-get update && apt-get -y upgrade
+    apt-get -y  install wget
+    wget -O- http://neuro.debian.net/lists/xenial.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list
+    apt-key adv --recv-keys --keyserver pool.sks-keyservers.net 2649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | apt-key add -; }
+    apt-get update
+    apt-get -y install git
+    apt-get -y install build-essential
+    apt-get -y install zlib1g-dev
+    apt-get -y install g++
+    apt-get -y install gcc
+    apt-get -y install libc6
+    apt-get -y install libstdc++6
+    apt-get -y install imagemagick
+    apt-get -y install perl
+    apt-get -y install p7zip-full
+
+    apt-get -y install python
+    apt-get -y install python-dev
+    apt-get -y install python-pip
+    apt-get -y install python-tk
+
+    apt-get -y install libeigen3-dev
+    apt-get -y install libqt4-opengl-dev
+    apt-get -y install libgl1-mesa-dev
+    apt-get -y install libfftw3-dev
+    apt-get -y install libtiff5-dev
+    apt-get -y install clang
+    apt-get -y install libblas-dev liblapack-dev
+    apt-get -y install libgsl0-dev
+    apt-get -y install libgsl2
+    apt-get -y install xvfb
+
+    apt-get -y install fsl-5.0-eddy-nonfree=5.0.9-1~nd16.04+1
+
+    pip install --upgrade pip==20.1
+    pip install setuptools==40.2.0
+    pip install numpy==1.16.2 --no-binary numpy
+    pip install scipy==0.19.1
+    pip install h5py==2.9.0
+    pip install cython==0.27
+    pip install imageio==2.4.1
+    pip install matplotlib==2.0.2
+    pip install moviepy==0.2.3.5
+    pip install openpyxl==2.4.8
+    pip install pandas==0.20.3
+    pip install Pillow==5.2.0
+    pip install requests==2.19.1
+    pip install scikit-learn==0.19.0
+    pip install six==1.12.0
+
+    pip install vtk==8.1.2
+    pip install PyMCubes==0.0.9
+
+
+    pip install nibabel==2.4.0
+    pip install git+https://github.com/MarcCote/tractconverter@master#tractconverter
+
+    pip install fury==0.4.0
+    pip install cythongsl==0.2.2
+    pip install trimeshpy==0.0.2
+
+    cd /dipy
+    pip install .
+
+    # Python
+    cd /scilpy
+    python setup.py build_all
+    sed -i '38s/.*/backend : Agg/' /usr/local/lib/python2.7/dist-packages/matplotlib/mpl-data/matplotlibrc
+
+    cd /
+    # MINC tools install
+    # DEBUG min tools TODO UNCOMMENT
+    wget http://packages.bic.mni.mcgill.ca/minc-toolkit/Debian/minc-toolkit-1.9.16-20180117-Ubuntu_16.04-x86_64.deb
+    wget http://packages.bic.mni.mcgill.ca/minc-toolkit/Debian/beast-library-1.1.0-20121212.deb
+    wget http://packages.bic.mni.mcgill.ca/minc-toolkit/Debian/bic-mni-models-0.1.1-20120421.deb
+    dpkg -i minc-toolkit-1.9.16-20180117-Ubuntu_16.04-x86_64.deb beast-library-1.1.0-20121212.deb bic-mni-models-0.1.1-20120421.deb
+    rm -f minc-toolkit-1.9.16-20180117-Ubuntu_16.04-x86_64.deb beast-library-1.1.0-20121212.deb bic-mni-models-0.1.1-20120421.deb
+
+    # Cmake
+    cd /
+    wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2.tar.gz
+    tar -xvzf cmake-3.13.2.tar.gz
+    rm -f cmake-3.13.2.tar.gz
+    cd cmake-3.13.2
+    ./bootstrap
+    make -j 8
+    make install
+
+    # FSL
+    wget https://fsl.fmrib.ox.ac.uk/fsldownloads/patches/eddy-patch-fsl-5.0.11/centos6/eddy_openmp
+    chmod +x eddy_openmp
+    mv eddy_openmp /usr/share/fsl/5.0/bin/eddy_openmp
+
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+    dpkg -i cuda-repo-ubuntu1604_8.0.61-1_amd64.deb
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y install cuda-runtime-8-0
+
+    wget https://fsl.fmrib.ox.ac.uk/fsldownloads/patches/eddy-patch-fsl-5.0.11/centos6/eddy_cuda8.0
+    chmod +x eddy_cuda8.0
+    mv eddy_cuda8.0 /usr/share/fsl/5.0/bin/eddy_cuda
+
+    # ANTs
+    cd /
+    mkdir ants_build
+    git clone https://github.com/ANTsX/ANTs.git
+    cd ANTs
+    git fetch --tags
+    git checkout tags/v2.3.1 -b v2.3.1
+    cd ../ants_build
+    cmake ../ANTs
+    make -j 8
+    cp ../ANTs/Scripts/*.sh bin/
+
+    # Freesurfer
+    cd /freesurfer
+    wget https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/6.0.1/freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.1.tar.gz
+    tar zxvf freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.1.tar.gz
+    rm freesurfer-Linux-centos6_x86_64-stable-pub-v6.0.1.tar.gz
+    mv license.txt freesurfer/
+    sed -i "s/source $FREESURFER/bash $FREESURFER/g" /freesurfer/freesurfer/SetUpFreeSurfer.sh
+
+    # MRtrix
+    cd /
+    git clone https://github.com/MRtrix3/mrtrix3.git
+    cd mrtrix3
+    git fetch --tags
+    git checkout tags/3.0_RC3 -b 3.0_RC3
+    ./configure
+    ./build
