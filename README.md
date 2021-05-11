@@ -7,7 +7,7 @@ The image for singularity can be built using `set.def` with the command:
 It can be used to run the Set-NF pipeline with the option
 `-with-singularity image_name.img` of Nextflow.
 
-To build the singularity, you have to copy your `license.txt` to the directory.
+To build the singularity, you have to copy your FreeSurfer `license.txt` to the directory.
 Run the command from the directory `set-singularity`.
 
 If you use this singularity, please cite:
